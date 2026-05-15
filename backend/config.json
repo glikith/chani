@@ -1,0 +1,30 @@
+{
+  "database": {
+    "path": "jarvis_memory.db"
+  },
+  "app": {
+    "name": "Jarvis Memory",
+    "version": "0.2.0",
+    "module": 2
+  },
+  "parser": {
+    "add_triggers": [
+      "new", "add", "save", "remember", "log", "note", "track",
+      "store", "record", "watch", "watching", "read", "reading",
+      "started", "finished", "bought"
+    ],
+    "retrieve_triggers": [
+      "get", "show", "list", "find", "fetch", "search",
+      "what", "recall", "display", "lookup", "my"
+    ],
+    "categories": [
+      "anime", "manga", "movie", "series", "show", "film",
+      "book", "novel", "podcast",
+      "bus", "train", "flight", "commute",
+      "food", "recipe", "restaurant", "meal",
+      "reminder", "todo", "task", "note",
+      "game", "music", "album", "song",
+      "person", "contact", "place"
+    ]
+  }
+}

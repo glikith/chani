@@ -1,0 +1,75 @@
+# =========================
+# Python Backend
+# =========================
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Database files
+*.db
+*.sqlite3
+
+# Environment variables
+.env
+.env.*
+
+# Logs
+*.log
+
+# Test / coverage
+.pytest_cache/
+.coverage
+htmlcov/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# VS Code / IDE
+.vscode/
+.idea/
+
+# =========================
+# Node / React Frontend
+# =========================
+
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+build/
+
+# Vite files
+vite.svg
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Environment files
+frontend/.env
+frontend/.env.*
+
+# =========================
+# Misc
+# =========================
+
+# Generated files
+*.tmp
+*.temp
+
+# Package lock ignore (optional)
+# Uncomment if you don't want lock files tracked
+# package-lock.json
+# yarn.lock
+# pnpm-lock.yaml
