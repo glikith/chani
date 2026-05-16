@@ -48,7 +48,7 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(
-    title="Jarvis Memory API",
+    title="Chani API",
     version="0.3.0",
     description=(
         "Voice-first personal memory tool. "

@@ -1,7 +1,7 @@
 /**
- * JarvisOrb.jsx
+ * ChaniOrb.jsx
  *
- * The visual heart of Jarvis Memory. A glowing, breathing orb whose
+ * The visual heart of Chani. A glowing, breathing orb whose
  * appearance shifts across four states:
  *
  *   idle        — slow cyan pulse, dim rings, resting
@@ -51,11 +51,11 @@ const STATE_CONFIG = {
   },
 };
 
-export default function JarvisOrb({ state = "idle" }) {
+export default function ChaniOrb({ state = "idle" }) {
   const cfg = STATE_CONFIG[state] ?? STATE_CONFIG.idle;
 
   return (
-    <div className="orb-scene" aria-label={`Jarvis orb — ${cfg.label}`}>
+    <div className="orb-scene" aria-label={`Chani orb — ${cfg.label}`}>
       {/* ── Outermost ambient halo ── */}
       <motion.div
         className="orb-halo"

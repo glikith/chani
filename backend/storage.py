@@ -1,5 +1,5 @@
 """
-storage.py — Public storage interface for Jarvis Memory.
+storage.py — Public storage interface for Chani.
 
 All business logic lives here.  SQLite is never touched directly — every
 DB operation is delegated to database.py.

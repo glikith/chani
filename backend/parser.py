@@ -1,5 +1,5 @@
 """
-parser.py — Intent parser for Jarvis Memory (Module 2).
+parser.py — Intent parser for Chani (Module 2).
 
 Takes a raw input string and returns a structured dict with:
   intent   : "add" | "retrieve" | "unknown"

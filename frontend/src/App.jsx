@@ -1,13 +1,13 @@
 /**
- * App.jsx — Jarvis Memory root component.
+ * App.jsx — Chani root component.
  *
  * Layout
  * ──────
  *   Full-viewport dark canvas
  *   ┌─────────────────────────────────┐
- *   │  ·  JARVIS MEMORY  ·  (header)  │
+ *   │  ·  Chani  ·  (header)  │
  *   │                                 │
- *   │        [ JarvisOrb ]            │  ← visual centrepiece
+ *   │        [ ChaniOrb ]            │  ← visual centrepiece
  *   │                                 │
  *   │       [ InputBar ]              │
  *   │                                 │
@@ -26,7 +26,7 @@
 
 import { useState } from "react";
 import { motion } from "framer-motion";
-import JarvisOrb from "./components/JarvisOrb";
+import ChaniOrb from "./components/ChaniOrb";
 import InputBar from "./components/InputBar";
 import ResultsList from "./components/ResultsList";
 import { addOrRetrieve } from "./api";
@@ -79,7 +79,7 @@ export default function App() {
         transition={{ duration: 0.7, ease: "easeOut" }}
       >
         <span className="header-dot" />
-        <h1 className="header-title">JARVIS MEMORY</h1>
+        <h1 className="header-title">Chani</h1>
         <span className="header-dot" />
       </motion.header>
 
@@ -90,7 +90,7 @@ export default function App() {
         transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
         aria-label="Status orb"
       >
-        <JarvisOrb state={orbState} />
+        <ChaniOrb state={orbState} />
       </motion.section>
 
       <motion.section

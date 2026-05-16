@@ -1,9 +1,9 @@
 {
   "database": {
-    "path": "jarvis_memory.db"
+    "path": "chani.db"
   },
   "app": {
-    "name": "Jarvis Memory",
+    "name": "Chani",
     "version": "0.2.0",
     "module": 2
   },
