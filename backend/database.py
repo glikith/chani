@@ -87,3 +87,27 @@ def fetch_by_keyword(keyword: str) -> list[sqlite3.Row]:
             """,
             (pattern, pattern, pattern),
         ).fetchall()
+
+
+def fetch_by_content(keyword: str) -> list[sqlite3.Row]:
+    """Search the content field only (not tags or category), case-insensitive."""
+    pattern = f"%{keyword}%"
+    with _get_connection() as conn:
+        return conn.execute(
+            "SELECT * FROM entries WHERE content LIKE ? COLLATE NOCASE ORDER BY created_at DESC",
+            (pattern,),
+        ).fetchall()
+
+
+def delete_entry(entry_id: int) -> bool:
+    """
+    Delete an entry by id.
+
+    Returns True if a row was deleted, False if id did not exist.
+    """
+    with _get_connection() as conn:
+        cursor = conn.execute(
+            "DELETE FROM entries WHERE id = ?", (entry_id,)
+        )
+        conn.commit()
+        return cursor.rowcount > 0

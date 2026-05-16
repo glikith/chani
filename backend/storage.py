@@ -1,8 +1,7 @@
 """
-storage.py — Public storage interface for Chani.
+storage.py — Public storage interface for Jarvis Memory.
 
-All business logic lives here.  SQLite is never touched directly — every
-DB operation is delegated to database.py.
+All business logic lives here.  SQLite is never touched directly — every DB operation is delegated to database.py.
 """
 
 from __future__ import annotations
@@ -103,6 +102,34 @@ class StorageService:
             raise ValueError("category must be a non-empty string")
 
         rows = database.fetch_by_category(category.strip())
+        return [StorageEntry(r) for r in rows]
+
+    def delete_entry(self, entry_id: int) -> bool:
+        """
+        Delete the entry with the given id.
+
+        Parameters
+        ----------
+        entry_id : int
+            The id of the entry to delete.
+
+        Returns
+        -------
+        bool
+            True if the entry existed and was deleted, False otherwise.
+        """
+        if not isinstance(entry_id, int) or entry_id < 1:
+            raise ValueError("entry_id must be a positive integer")
+        return database.delete_entry(entry_id)
+
+    def search_by_content(self, keyword: str) -> list[StorageEntry]:
+        """
+        Search the content field across ALL categories for keyword.
+        Used by the category-less remove flow.
+        """
+        if not keyword or not keyword.strip():
+            raise ValueError("keyword must be a non-empty string")
+        rows = database.fetch_by_content(keyword.strip())
         return [StorageEntry(r) for r in rows]
 
     def search_by_keyword(self, keyword: str) -> list[StorageEntry]:

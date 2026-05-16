@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════════
-   app.css — Chani
+   app.css — Jarvis Memory
    Aesthetic: Deep-space terminal — void black, liquid-light orb,
               monospaced data, clean geometric chrome.
    ═══════════════════════════════════════════════════════════════════ */
@@ -427,3 +427,138 @@ body {
 ::-webkit-scrollbar { width: 5px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--border-hi); border-radius: 4px; }
+
+/* ── Toast Stack ─────────────────────────────────────────────────── */
+.toast-stack {
+  position: fixed;
+  top: 1.25rem;
+  right: 1.25rem;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  pointer-events: none;           /* stack itself is pass-through */
+  width: clamp(260px, 30vw, 340px);
+}
+
+/* Individual toast */
+.toast {
+  pointer-events: all;            /* but each toast is interactive */
+  background: var(--surface-3);
+  border: 1px solid var(--border-hi);
+  border-radius: 14px;
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  backdrop-filter: blur(12px);
+  box-shadow:
+    0 4px 24px rgba(0,0,0,0.45),
+    0 1px 0 rgba(255,255,255,0.04) inset;
+}
+
+.toast--category {
+  flex-direction: column;
+  align-items: flex-start;
+  border-color: rgba(6,182,212,0.25);
+  box-shadow:
+    0 4px 24px rgba(0,0,0,0.45),
+    0 0 0 1px rgba(6,182,212,0.06);
+}
+
+.toast--undo {
+  /* base undo style — accent set per variant below */
+  border-color: rgba(245,158,11,0.25);
+  box-shadow:
+    0 4px 24px rgba(0,0,0,0.45),
+    0 0 0 1px rgba(245,158,11,0.06);
+}
+
+/* delete: amber */
+.toast--undo-delete {
+  border-color: rgba(245,158,11,0.25);
+  box-shadow:
+    0 4px 24px rgba(0,0,0,0.45),
+    0 0 0 1px rgba(245,158,11,0.06);
+}
+
+/* add: emerald */
+.toast--undo-add {
+  border-color: rgba(52,211,153,0.25);
+  box-shadow:
+    0 4px 24px rgba(0,0,0,0.45),
+    0 0 0 1px rgba(52,211,153,0.06);
+}
+
+.toast-message {
+  font-family: var(--font-body);
+  font-size: 0.88rem;
+  color: var(--text-primary);
+  line-height: 1.4;
+  flex: 1;
+}
+
+.toast-highlight {
+  font-family: var(--font-display);
+  font-size: 0.80rem;
+  color: var(--cyan);
+}
+
+.toast--undo .toast-highlight {
+  color: var(--amber);
+}
+
+/* Action row */
+.toast-actions {
+  display: flex;
+  gap: 8px;
+  width: 100%;
+}
+
+/* Buttons */
+.toast-btn {
+  font-family: var(--font-display);
+  font-size: 0.68rem;
+  letter-spacing: 0.08em;
+  border-radius: 8px;
+  border: 1px solid var(--border-hi);
+  padding: 5px 14px;
+  cursor: pointer;
+  transition: background 0.18s, border-color 0.18s, color 0.18s;
+}
+
+.toast-btn--confirm {
+  background: rgba(6,182,212,0.14);
+  border-color: rgba(6,182,212,0.35);
+  color: var(--cyan);
+}
+.toast-btn--confirm:hover {
+  background: rgba(6,182,212,0.24);
+  border-color: rgba(6,182,212,0.55);
+}
+
+.toast-btn--dismiss {
+  background: transparent;
+  color: var(--text-secondary);
+}
+.toast-btn--dismiss:hover {
+  background: rgba(255,255,255,0.05);
+  color: var(--text-primary);
+}
+
+.toast-btn--undo {
+  background: rgba(245,158,11,0.14);
+  border-color: rgba(245,158,11,0.35);
+  color: var(--amber);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.toast-btn--undo:hover {
+  background: rgba(245,158,11,0.24);
+  border-color: rgba(245,158,11,0.55);
+}
+
+/* Countdown SVG ring */
+.countdown-ring {
+  flex-shrink: 0;
+}

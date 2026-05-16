@@ -1,32 +1,20 @@
 """
-parser.py — Intent parser for Chani (Module 2).
+parser.py — spaCy-powered intent parser for Chani.
 
-Takes a raw input string and returns a structured dict with:
-  intent   : "add" | "retrieve" | "unknown"
-  category : matched category string, or None
-  content  : extracted content string, or None
-  tags     : list of auto-generated tag strings
-
-All trigger words and known categories are loaded exclusively from
-config.json — no vocabulary is hardcoded here.  To extend the parser,
-edit config.json only.
-
-Public API
-----------
-    result = parse_input("new anime Blue Lock")
-    # → {"intent": "add", "category": "anime",
-    #    "content": "Blue Lock", "tags": ["anime", "blue lock"]}
+All vocabulary lives exclusively in config.json.
 """
 
 from __future__ import annotations
 
 import json
-import re
 from pathlib import Path
 from typing import Optional
 
+import spacy
+from spacy.matcher import PhraseMatcher
+
 # ---------------------------------------------------------------------------
-# Config loading — single source of truth for all vocabulary
+# Config
 # ---------------------------------------------------------------------------
 
 _CONFIG_PATH = Path(__file__).parent / "config.json"
@@ -37,92 +25,89 @@ def _load_parser_config() -> dict:
         return json.load(f)["parser"]
 
 
-# Cache at import time; call reload_config() if config.json changes at runtime.
 _cfg: dict = _load_parser_config()
+_nlp = spacy.blank("en")
 
 
 def reload_config() -> None:
-    """Re-read config.json without restarting the process.
-    Useful for tests or a live admin endpoint later.
-    """
+    """Re-read config.json and rebuild all matchers without restarting."""
     global _cfg
     _cfg = _load_parser_config()
+    _build_matchers()
 
 
 # ---------------------------------------------------------------------------
-# Internal helpers
+# PhraseMatcher
 # ---------------------------------------------------------------------------
 
-def _tokenize(text: str) -> list[str]:
-    """Lowercase, strip punctuation, split on whitespace."""
-    cleaned = re.sub(r"[^\w\s]", " ", text.lower())
-    return cleaned.split()
+_ID_ADD      = "ADD"
+_ID_RETRIEVE = "RETRIEVE"
+_ID_REMOVE   = "REMOVE"
+_ID_CATEGORY = "CATEGORY"
 
 
-def _find_intent(tokens: list[str]) -> str:
-    """Return 'add', 'retrieve', or 'unknown' based on trigger word presence."""
-    add_set = set(_cfg["add_triggers"])
-    retrieve_set = set(_cfg["retrieve_triggers"])
-
-    for token in tokens:
-        if token in add_set:
-            return "add"
-    for token in tokens:
-        if token in retrieve_set:
-            return "retrieve"
-    return "unknown"
+def _make_matcher(vocab) -> PhraseMatcher:
+    m = PhraseMatcher(vocab, attr="LOWER")
+    m.add(_ID_ADD,      [_nlp.make_doc(t) for t in _cfg["add_triggers"]])
+    m.add(_ID_RETRIEVE, [_nlp.make_doc(t) for t in _cfg["retrieve_triggers"]])
+    m.add(_ID_REMOVE,   [_nlp.make_doc(t) for t in _cfg["remove_triggers"]])
+    m.add(_ID_CATEGORY, [_nlp.make_doc(c) for c in _cfg["categories"]])
+    return m
 
 
-def _find_category(tokens: list[str]) -> Optional[str]:
+_matcher: PhraseMatcher = _make_matcher(_nlp.vocab)
+
+
+def _build_matchers() -> None:
+    global _matcher
+    _matcher = _make_matcher(_nlp.vocab)
+
+
+# ---------------------------------------------------------------------------
+# Plural stemming
+# ---------------------------------------------------------------------------
+
+def _stem_to_category(word: str, known: dict[str, str]) -> Optional[str]:
     """
-    Return the first token that matches a known category, or None.
-    Compares lowercased tokens against the categories list.
+    Try to resolve a word to a known category by stripping common English
+    plural suffixes.  Returns the canonical category string or None.
+
+    Tries in order:
+      1. Direct match (already done by caller, but kept for completeness)
+      2. Strip trailing 's'   — movies→movie, books→book
+      3. Strip trailing 'es'  — dishes→dish, buses→bus
     """
-    all_triggers = set(_cfg["add_triggers"]) | set(_cfg["retrieve_triggers"])
-    known = {c.lower(): c for c in _cfg["categories"]}
-    for token in tokens:
-        if token in known and token not in all_triggers:
-            return known[token]          # return canonical casing from config
+    if word in known:
+        return known[word]
+    # strip 'es' first (more specific) then 's'
+    if word.endswith("es") and word[:-2] in known:
+        return known[word[:-2]]
+    if word.endswith("s") and word[:-1] in known:
+        return known[word[:-1]]
     return None
 
 
+# ---------------------------------------------------------------------------
+# Content extraction
+# ---------------------------------------------------------------------------
+
 def _extract_content(
-    raw: str,
-    category: str,
-    trigger_intent: str,
+    doc: spacy.tokens.Doc,
+    strip_spans: set[tuple[int, int]],
 ) -> Optional[str]:
-    """
-    Remove trigger words and the category word from the raw string to
-    isolate the content the user actually wants to store.
-
-    Strategy
-    --------
-    1. Build a set of words to strip: all trigger lists + the matched category.
-    2. Walk the *original* (case-preserved) tokens left-to-right.
-    3. Skip tokens whose lowercase form is in the strip set.
-    4. Whatever remains (in order) is the content.
-
-    This preserves the original capitalisation of proper nouns like "Blue Lock".
-    """
-    strip_words = (
-        set(_cfg["add_triggers"])
-        | set(_cfg["retrieve_triggers"])
-        | {category.lower()}
-    )
-
-    # Re-tokenize preserving original case, but match against lowercase
-    raw_tokens = re.sub(r"[^\w\s]", " ", raw).split()
-    content_tokens = [t for t in raw_tokens if t.lower() not in strip_words]
-
-    content = " ".join(content_tokens).strip()
+    exclude: set[int] = set()
+    for start, end in strip_spans:
+        exclude.update(range(start, end))
+    tokens = [doc[i].text for i in range(len(doc)) if i not in exclude]
+    content = " ".join(tokens).strip()
     return content if content else None
 
 
+# ---------------------------------------------------------------------------
+# Tags
+# ---------------------------------------------------------------------------
+
 def _build_tags(category: Optional[str], content: Optional[str]) -> list[str]:
-    """
-    Auto-generate tags from category and content.
-    Tags are lowercased so they are easy to search.
-    """
     tags: list[str] = []
     if category:
         tags.append(category.lower())
@@ -139,53 +124,147 @@ def parse_input(raw: str) -> dict:
     """
     Parse a raw user string into a structured intent dictionary.
 
-    Parameters
-    ----------
-    raw : str
-        Free-form input, e.g. "new anime Blue Lock" or "show my books".
+    Step 1: Lowercase the entire input immediately.
+    Step 2: Run PhraseMatcher for intents and direct category matches.
+    Step 3: If no category matched, try plural stemming on every token.
+    Step 4: Classify intent; handle remove-without-category gracefully.
 
     Returns
     -------
-    dict with keys: intent, category, content, tags
-
-    Examples
-    --------
-    >>> parse_input("new anime Blue Lock")
-    {'intent': 'add', 'category': 'anime', 'content': 'Blue Lock', 'tags': ['anime', 'blue lock']}
-
-    >>> parse_input("show anime")
-    {'intent': 'retrieve', 'category': 'anime', 'content': None, 'tags': ['anime']}
-
-    >>> parse_input("hello world")
-    {'intent': 'unknown', 'category': None, 'content': None, 'tags': []}
+    dict with keys:
+      intent            : "add" | "retrieve" | "remove" |
+                          "new_category" | "unknown"
+      category          : str | None
+      content           : str | None  (lowercase)
+      tags              : list[str]
+      suggested_category: str | None
     """
+    _base = {
+        "intent": "unknown",
+        "category": None,
+        "content": None,
+        "tags": [],
+        "suggested_category": None,
+    }
+
     if not raw or not raw.strip():
-        return {"intent": "unknown", "category": None, "content": None, "tags": []}
+        return _base
 
-    tokens = _tokenize(raw)
-    intent = _find_intent(tokens)
-    category = _find_category(tokens)
+    # ── 1. Normalise to lowercase immediately ─────────────────────────
+    normalised = raw.strip().lower()
+    doc = _nlp(normalised)
+    matches = _matcher(doc)
 
-    if intent == "unknown" or category is None:
-        # If we can't determine category, we can still attempt a retrieve
-        # when a retrieve trigger is present (category-less listing not useful,
-        # so keep as unknown unless both pieces are present).
-        return {"intent": "unknown", "category": None, "content": None, "tags": []}
+    # ── 2. Group matches by label ─────────────────────────────────────
+    intent_spans: dict[str, list[tuple[int, int]]] = {
+        _ID_ADD: [], _ID_RETRIEVE: [], _ID_REMOVE: [], _ID_CATEGORY: [],
+    }
+    for match_id, start, end in matches:
+        label = _nlp.vocab.strings[match_id]
+        intent_spans[label].append((start, end))
 
-    if intent == "add":
-        content = _extract_content(raw, category, intent)
-        tags = _build_tags(category, content)
+    # ── 3. Determine intent ───────────────────────────────────────────
+    if intent_spans[_ID_REMOVE]:
+        intent = "remove"
+        trigger_spans = intent_spans[_ID_REMOVE]
+    elif intent_spans[_ID_ADD]:
+        intent = "add"
+        trigger_spans = intent_spans[_ID_ADD]
+    elif intent_spans[_ID_RETRIEVE]:
+        intent = "retrieve"
+        trigger_spans = intent_spans[_ID_RETRIEVE]
+    else:
+        return _base
+
+    # ── 4. Category detection (direct + plural stemming) ─────────────
+    known = {c.lower(): c for c in _cfg["categories"]}
+    all_triggers: set[str] = (
+        set(_cfg["add_triggers"])
+        | set(_cfg["retrieve_triggers"])
+        | set(_cfg["remove_triggers"])
+    )
+
+    category: Optional[str] = None
+    cat_spans: list[tuple[int, int]] = []
+
+    # 4a. Direct PhraseMatcher hit
+    if intent_spans[_ID_CATEGORY]:
+        first_start, first_end = intent_spans[_ID_CATEGORY][0]
+        matched_lower = doc[first_start:first_end].text.lower()
+        category = known.get(matched_lower)
+        cat_spans = intent_spans[_ID_CATEGORY]
+
+    # 4b. Plural stemming fallback — scan every non-trigger token
+    if category is None:
+        trigger_indices: set[int] = set()
+        for s, e in trigger_spans:
+            trigger_indices.update(range(s, e))
+
+        for i, token in enumerate(doc):
+            if i in trigger_indices or token.is_space or token.is_punct:
+                continue
+            resolved = _stem_to_category(token.text.lower(), known)
+            if resolved:
+                category = resolved
+                cat_spans = [(i, i + 1)]
+                break
+
+    # ── 5. Spans to strip from content ───────────────────────────────
+    strip_spans: set[tuple[int, int]] = set(trigger_spans)
+    strip_spans.update(cat_spans)
+
+    content = _extract_content(doc, strip_spans)
+
+    # ── 6. No category found ──────────────────────────────────────────
+    if category is None:
+        # remove without category: return intent=remove, category=None
+        # so the API layer can do a cross-category content search
+        if intent == "remove":
+            # content here is everything that isn't a trigger word
+            return {
+                **_base,
+                "intent": "remove",
+                "category": None,
+                "content": content,
+                "tags": [],
+            }
+
+        # add/retrieve without a recognised category → new_category
+        trigger_indices = set()
+        for s, e in trigger_spans:
+            trigger_indices.update(range(s, e))
+
+        for i, token in enumerate(doc):
+            if i in trigger_indices or token.is_space or token.is_punct:
+                continue
+            suggested = token.text.lower()
+            content_without_suggested = _extract_content(
+                doc, strip_spans | {(i, i + 1)}
+            )
+            return {
+                **_base,
+                "intent": "new_category",
+                "content": content_without_suggested,
+                "suggested_category": suggested,
+            }
+
+        return _base  # trigger + nothing else
+
+    # ── 7. Normal resolved intents ────────────────────────────────────
+    if intent == "retrieve":
         return {
-            "intent": "add",
+            **_base,
+            "intent": "retrieve",
             "category": category,
-            "content": content,
-            "tags": tags,
+            "content": None,
+            "tags": _build_tags(category, None),
         }
 
-    # intent == "retrieve"
+    # add or remove (with category)
     return {
-        "intent": "retrieve",
+        **_base,
+        "intent": intent,
         "category": category,
-        "content": None,
-        "tags": _build_tags(category, None),
+        "content": content,
+        "tags": _build_tags(category, content),
     }

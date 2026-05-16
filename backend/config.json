@@ -4,27 +4,76 @@
   },
   "app": {
     "name": "Chani",
-    "version": "0.2.0",
-    "module": 2
+    "version": "0.4.0",
+    "module": 4
   },
   "parser": {
     "add_triggers": [
-      "new", "add", "save", "remember", "log", "note", "track",
-      "store", "record", "watch", "watching", "read", "reading",
-      "started", "finished", "bought"
+      "new",
+      "add",
+      "save",
+      "remember",
+      "log",
+      "note",
+      "track",
+      "store",
+      "record",
+      "watch",
+      "watching",
+      "read",
+      "reading",
+      "started",
+      "finished",
+      "bought"
     ],
     "retrieve_triggers": [
-      "get", "show", "list", "find", "fetch", "search",
-      "what", "recall", "display", "lookup", "my"
+      "get",
+      "show",
+      "list",
+      "find",
+      "fetch",
+      "search",
+      "what",
+      "recall",
+      "display",
+      "lookup",
+      "my"
+    ],
+    "remove_triggers": [
+      "remove",
+      "delete",
+      "forget",
+      "drop"
     ],
     "categories": [
-      "anime", "manga", "movie", "series", "show", "film",
-      "book", "novel", "podcast",
-      "bus", "train", "flight", "commute",
-      "food", "recipe", "restaurant", "meal",
-      "reminder", "todo", "task", "note",
-      "game", "music", "album", "song",
-      "person", "contact", "place"
+      "anime",
+      "manga",
+      "movie",
+      "series",
+      "film",
+      "book",
+      "novel",
+      "podcast",
+      "bus",
+      "train",
+      "flight",
+      "commute",
+      "food",
+      "recipe",
+      "restaurant",
+      "meal",
+      "reminder",
+      "todo",
+      "task",
+      "game",
+      "music",
+      "album",
+      "song",
+      "person",
+      "contact",
+      "place",
+      "scifi",
+      "laptop"
     ]
   }
 }
