@@ -1,75 +1,43 @@
-# =========================
-# Python Backend
-# =========================
-
-# Virtual environments
-.venv/
-venv/
-env/
-
-# Python cache
+# ── Python ────────────────────────────────────────────────────────
 __pycache__/
 *.py[cod]
-*$py.class
-
-# Database files
+*.pyo
 *.db
-*.sqlite3
-
-# Environment variables
+*.db-shm
+*.db-wal
 .env
-.env.*
-
-# Logs
-*.log
-
-# Test / coverage
-.pytest_cache/
-.coverage
-htmlcov/
-
-# OS files
-.DS_Store
-Thumbs.db
-
-# VS Code / IDE
-.vscode/
-.idea/
-
-# =========================
-# Node / React Frontend
-# =========================
-
-# Dependencies
-node_modules/
-
-# Build output
+venv/
+.venv/
+env/
+*.egg-info/
 dist/
 build/
+.pytest_cache/
 
-# Vite files
-vite.svg
+# ── Node ──────────────────────────────────────────────────────────
+node_modules/
+dist/
+.env
+.env.local
+.env.*.local
 
-# Logs
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
+# ── OS ────────────────────────────────────────────────────────────
+.DS_Store
+.DS_Store?
+._*
+Thumbs.db
+ehthumbs.db
+Desktop.ini
 
-# Environment files
-frontend/.env
-frontend/.env.*
+# ── VS Code ───────────────────────────────────────────────────────
+.vscode/
+*.code-workspace
 
-# =========================
-# Misc
-# =========================
+# ── JetBrains ─────────────────────────────────────────────────────
+.idea/
+*.iml
 
-# Generated files
-*.tmp
-*.temp
-
-# Package lock ignore (optional)
-# Uncomment if you don't want lock files tracked
-# package-lock.json
-# yarn.lock
-# pnpm-lock.yaml
+# ── Misc ──────────────────────────────────────────────────────────
+*.log
+*.swp
+*.swo
