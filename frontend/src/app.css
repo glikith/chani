@@ -19,6 +19,7 @@
   --whiskey-dim:     rgba(211, 152,  88, 0.35);
   --whiskey-ghost:   rgba(211, 152,  88, 0.12);
   --honey-dim:       rgba(133,  67,  30, 0.60);
+  --honey-up:       rgb(197, 112, 63);
   --burnt-glass:     rgba( 52,  21,  15, 0.55);
 
   /* Typography */
@@ -42,43 +43,10 @@ body {
   line-height: 1.6;
   color: var(--champagne);
   /*
-   * Background design rationale:
-   * Base: deep balsamico (#150C0C) — richest dark, sets the mood
-   * Centre radial: burnt-coffee (#34150F) lifted slightly so the
-   *   whiskey-sour HUD sits on a warm mid-tone, not pure black
-   * Vignette: balsamico bleeds back in at all four corners, creating
-   *   natural depth that frames the center without a harsh border
-   * Two off-axis warm blooms (top-left, bottom-right) at honey-garlic
-   *   give the dark field organic warmth without symmetry clichés
-   * Net result: the center stays readable, the animation glows cleanly,
-   *   and the champagne title reads against the upper region
+   * Background: deep balsamico base so the darkest palette tone
+   * anchors the field. All other layers paint on top of it.
    */
   background-color: var(--balsamico);
-  background-image:
-    /* Corner vignette — deep balsamico pulls edges to near-black */
-    radial-gradient(ellipse 120% 120% at 50% 50%,
-      transparent 38%,
-      rgba(21, 12, 12, 0.72) 100%
-    ),
-    /* Main warm center field */
-    radial-gradient(ellipse 80% 70% at 50% 42%,
-      #34150F 0%,
-      #22100A 55%,
-      transparent 100%
-    ),
-    /* Top-left warm bloom — honey undertone */
-    radial-gradient(ellipse 55% 45% at 12% 8%,
-      rgba(133, 67, 30, 0.22) 0%,
-      transparent 70%
-    ),
-    /* Bottom-right secondary bloom */
-    radial-gradient(ellipse 45% 40% at 88% 92%,
-      rgba(133, 67, 30, 0.14) 0%,
-      transparent 70%
-    );
-  background-repeat: no-repeat;
-  background-size: cover;
-  background-attachment: fixed;
   -webkit-font-smoothing: antialiased;
   overflow-x: hidden;
 }
@@ -91,13 +59,104 @@ body {
   border-radius: 4px;
 }
 
-/* ── App shell ───────────────────────────────────────────────────── */
+/* ── App shell + background system ──────────────────────────────── */
+/*
+ * Background design — three stacked layers:
+ *
+ * Layer 1 (.app itself) — the gradient canvas
+ *   Paints the main colour story:
+ *   · Balsamico base anchors all four edges (deepest, no light leakage)
+ *   · Burnt-coffee warm pool centred slightly above middle — this is the
+ *     "stage" the animation sits on; warm enough to separate from edges
+ *   · Bottom-left whiskey-sour bloom: the boldest use of accent colour,
+ *     off-axis and asymmetric — gives the composition a point of interest
+ *     without competing with the centered animation
+ *   · Top-right champagne breathe: faint, sparse — adds a cool-warm
+ *     contrast axis (warm bottom-left ↔ pale top-right) that prevents
+ *     the palette from reading as monochrome
+ *   · Honey-garlic mid-level glow slightly below center so the title
+ *     zone above it has a distinct warm lift behind the text
+ *
+ * Layer 2 (::before) — SVG fractal noise texture
+ *   Low opacity grain over the entire surface.  Adds tactile warmth,
+ *   prevents the flat digital look, and gives the gradients body.
+ *   Generated inline as a data-URI SVG feTurbulence filter — no image file.
+ *
+ * Layer 3 (::after) — hard vignette frame
+ *   Radial gradient pulling to near-balsamico at all four corners.
+ *   Keeps the content zone visually centered and frames the composition.
+ */
+
 .app {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 0 1.5rem 6rem;   /* bottom pad clears footer */
+  padding: 0 1.5rem 6rem;
   position: relative;
+  isolation: isolate;   /* new stacking context — keeps pseudo-elements contained */
+
+  background-color: var(--balsamico);
+  background-image:
+    /* ① Asymmetric whiskey-sour bloom — bottom-left, largest accent hit */
+    radial-gradient(ellipse 70% 55% at 8% 88%,
+      rgba(211, 152, 88, 0.28) 0%,
+      rgba(211, 152, 88, 0.08) 45%,
+      transparent 72%
+    ),
+    /* ② Faint champagne breathe — top-right, palette contrast axis */
+    radial-gradient(ellipse 52% 38% at 93% 4%,
+      rgba(234, 206, 170, 0.09) 0%,
+      rgba(234, 206, 170, 0.03) 45%,
+      transparent 72%
+    ),
+    /* ③ Honey-garlic mid lift — behind title zone */
+    radial-gradient(ellipse 65% 40% at 50% 18%,
+      rgba(133, 67, 30, 0.38) 0%,
+      rgba(133, 67, 30, 0.12) 50%,
+      transparent 80%
+    ),
+    /* ④ Burnt-coffee warm stage — centered stage for the animation */
+    radial-gradient(ellipse 72% 60% at 50% 50%,
+      #34150F 0%,
+      rgba(52, 21, 15, 0.70) 40%,
+      transparent 75%
+    ),
+    /* ⑤ Secondary whiskey hint — top-left, balances the bottom-left bloom */
+    radial-gradient(ellipse 38% 30% at 4% 6%,
+      rgba(211, 152, 88, 0.10) 0%,
+      transparent 65%
+    );
+
+  min-height: 100%;
+}
+
+/* Layer 2 — grain texture */
+.app::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -2;
+  pointer-events: none;
+  opacity: 0.055;
+  /* Inline SVG feTurbulence — no external file, no network request */
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='256' height='256'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.68' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='256' height='256' filter='url(%23g)'/%3E%3C/svg%3E");
+  background-size: 192px 192px;
+  background-repeat: repeat;
+}
+
+/* Layer 3 — vignette frame */
+.app::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse 100% 100% at 50% 50%,
+      transparent 42%,
+      rgba(21, 12, 12, 0.55) 75%,
+      rgba(21, 12, 12, 0.82) 100%
+    );
 }
 
 /* ── Above-fold section — exactly 100vh, no overflow ────────────── */
@@ -121,9 +180,6 @@ body {
   padding-top: 1rem;
 }
 
-/* app-bg and app-grain removed — gradient now on body, grain via CSS pseudo */
-.app > * { position: relative; z-index: 2; }
-
 /* ── Header ──────────────────────────────────────────────────────── */
 .app-header {
   text-align: center;
@@ -136,7 +192,7 @@ body {
   font-size: clamp(3rem, 8vw, 4.8rem);
   font-weight: 800;
   letter-spacing: 0.22em;
-  color: var(--honey-garlic);
+  color: var(--honey-up);
   line-height: 1;
   text-transform: uppercase;
   /* Warm shadow — lifted off the dark bg without pure black */
