@@ -1,45 +1,38 @@
 /**
- * ToastStack.jsx — Non-blocking toast container for Chani.
+ * ToastStack.jsx — Chani
+ *
+ * Warm-themed, non-blocking toast container fixed to top-right.
  *
  * Toast types
  * ───────────
  *   "new_category"  — "Add [word] as a new category? [Yes] [No]"
- *   "undo_delete"   — "Deleted [content]. Undo?"   amber ring
- *   "undo_add"      — "Added [content]. Undo?"     emerald ring
+ *   "undo_delete"   — "Deleted [content]. Undo?"   (5-second ring)
+ *   "undo_add"      — "Added [content]. Undo?"     (5-second ring)
  *
- * All toasts slide in from the right via Framer Motion, stack vertically
- * with a gap, and never block the input bar (pointer-events: none on the
- * container; pointer-events: all on each individual toast).
- *
- * UndoToast is the single shared component for both undo variants.
- * It accepts a `variant` prop ("delete" | "add") that controls the accent
- * colour and label word — no logic is duplicated.
+ * UndoToast is shared between both undo variants via a `variant` prop.
+ * CountdownRing uses var(--whiskey-sour) for both undo types.
  */
 
 import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 
-// ── Slide-in spring ────────────────────────────────────────────────────────
-
 const TOAST_VARIANTS = {
-  initial: { opacity: 0, x: 64, scale: 0.96 },
+  initial: { opacity: 0, x: 56, scale: 0.96 },
   animate: {
     opacity: 1, x: 0, scale: 1,
-    transition: { type: "spring", stiffness: 320, damping: 28 },
+    transition: { type: "spring", stiffness: 300, damping: 28 },
   },
   exit: {
-    opacity: 0, x: 64, scale: 0.94,
-    transition: { duration: 0.22, ease: "easeIn" },
+    opacity: 0, x: 56, scale: 0.94,
+    transition: { duration: 0.20, ease: "easeIn" },
   },
 };
 
 const UNDO_SECONDS = 5;
 
-// ── CountdownRing ──────────────────────────────────────────────────────────
-// Single SVG ring used by both undo variants. `color` is a CSS variable
-// string like "var(--amber)" or "var(--emerald)".
+// ── Countdown ring ─────────────────────────────────────────────────
 
-function CountdownRing({ duration, color, size = 36 }) {
+function CountdownRing({ duration, size = 34 }) {
   const r = (size - 4) / 2;
   const circumference = 2 * Math.PI * r;
   const [elapsed, setElapsed] = useState(0);
@@ -57,55 +50,34 @@ function CountdownRing({ duration, color, size = 36 }) {
   const dashOffset = circumference * (elapsed / duration);
 
   return (
-    <svg
-      width={size} height={size}
-      viewBox={`0 0 ${size} ${size}`}
-      className="countdown-ring"
-      aria-hidden
-    >
-      <circle
-        cx={size / 2} cy={size / 2} r={r}
-        fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth={2}
-      />
-      <circle
-        cx={size / 2} cy={size / 2} r={r}
-        fill="none" stroke={color} strokeWidth={2}
-        strokeLinecap="round"
-        strokeDasharray={circumference}
-        strokeDashoffset={dashOffset}
-        transform={`rotate(-90 ${size / 2} ${size / 2})`}
-        style={{ transition: "stroke-dashoffset 40ms linear" }}
-      />
-      <text
-        x={size / 2} y={size / 2 + 4}
-        textAnchor="middle" fontSize="10"
-        fill={color} fontFamily="var(--font-display)"
-      >
+    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}
+         className="countdown-ring" aria-hidden>
+      <circle cx={size/2} cy={size/2} r={r}
+              fill="none" stroke="rgba(211,152,88,0.15)" strokeWidth={2}/>
+      <circle cx={size/2} cy={size/2} r={r}
+              fill="none" stroke="var(--whiskey-sour)" strokeWidth={2}
+              strokeLinecap="round"
+              strokeDasharray={circumference}
+              strokeDashoffset={dashOffset}
+              transform={`rotate(-90 ${size/2} ${size/2})`}
+              style={{ transition: "stroke-dashoffset 40ms linear" }}/>
+      <text x={size/2} y={size/2+4} textAnchor="middle" fontSize="9"
+            fill="var(--whiskey-sour)" fontFamily="var(--font-mono)">
         {Math.max(0, Math.ceil(duration - elapsed))}
       </text>
     </svg>
   );
 }
 
-// ── UndoToast — shared component for undo_add and undo_delete ──────────────
+// ── UndoToast — shared for undo_add and undo_delete ────────────────
 
-const UNDO_CONFIG = {
-  delete: {
-    verb:        "Deleted",
-    cssModifier: "toast--undo-delete",
-    ringColor:   "var(--amber)",
-    ariaVerb:    "delete",
-  },
-  add: {
-    verb:        "Added",
-    cssModifier: "toast--undo-add",
-    ringColor:   "var(--emerald)",
-    ariaVerb:    "add",
-  },
+const UNDO_LABELS = {
+  delete: "Deleted",
+  add:    "Added",
 };
 
 export function UndoToast({ variant, content, onUndo, onExpire }) {
-  const cfg = UNDO_CONFIG[variant] ?? UNDO_CONFIG.delete;
+  const verb = UNDO_LABELS[variant] ?? "Removed";
 
   useEffect(() => {
     const id = setTimeout(onExpire, UNDO_SECONDS * 1000);
@@ -114,69 +86,47 @@ export function UndoToast({ variant, content, onUndo, onExpire }) {
 
   return (
     <motion.div
-      className={`toast toast--undo ${cfg.cssModifier}`}
+      className={`toast toast--undo toast--undo-${variant}`}
       variants={TOAST_VARIANTS}
-      initial="initial"
-      animate="animate"
-      exit="exit"
+      initial="initial" animate="animate" exit="exit"
       role="alertdialog"
-      aria-label={`${cfg.verb} ${content}. Undo?`}
+      aria-label={`${verb} ${content}. Undo?`}
     >
-      <CountdownRing duration={UNDO_SECONDS} color={cfg.ringColor} />
+      <CountdownRing duration={UNDO_SECONDS} />
       <p className="toast-message">
-        {cfg.verb}{" "}
-        <span className="toast-highlight" style={{ color: cfg.ringColor }}>
-          "{content}"
-        </span>
+        {verb}{" "}
+        <span className="toast-highlight">"{content}"</span>
         {". Undo?"}
       </p>
-      <button
-        className="toast-btn toast-btn--undo"
-        style={{
-          background:   `color-mix(in srgb, ${cfg.ringColor} 14%, transparent)`,
-          borderColor:  `color-mix(in srgb, ${cfg.ringColor} 35%, transparent)`,
-          color:        cfg.ringColor,
-        }}
-        onClick={onUndo}
-        aria-label={`Undo ${cfg.ariaVerb}`}
-      >
+      <button className="toast-btn toast-btn--undo" onClick={onUndo}
+              aria-label={`Undo ${verb.toLowerCase()}`}>
         Undo
       </button>
     </motion.div>
   );
 }
 
-// ── NewCategoryToast ────────────────────────────────────────────────────────
+// ── NewCategoryToast ───────────────────────────────────────────────
 
 export function NewCategoryToast({ suggested, onConfirm, onDismiss }) {
   return (
     <motion.div
       className="toast toast--category"
       variants={TOAST_VARIANTS}
-      initial="initial"
-      animate="animate"
-      exit="exit"
+      initial="initial" animate="animate" exit="exit"
       role="alertdialog"
       aria-label={`Add ${suggested} as a new category?`}
     >
       <p className="toast-message">
-        Add{" "}
-        <span className="toast-highlight">"{suggested}"</span>
-        {" "}as a new category?
+        Add <span className="toast-highlight">"{suggested}"</span> as a new category?
       </p>
       <div className="toast-actions">
-        <button
-          className="toast-btn toast-btn--confirm"
-          onClick={onConfirm}
-          aria-label="Yes, add category"
-        >
+        <button className="toast-btn toast-btn--confirm" onClick={onConfirm}
+                aria-label="Yes, add category">
           Yes
         </button>
-        <button
-          className="toast-btn toast-btn--dismiss"
-          onClick={onDismiss}
-          aria-label="No, dismiss"
-        >
+        <button className="toast-btn toast-btn--dismiss" onClick={onDismiss}
+                aria-label="No, dismiss">
           No
         </button>
       </div>
@@ -184,13 +134,7 @@ export function NewCategoryToast({ suggested, onConfirm, onDismiss }) {
   );
 }
 
-// ── ToastStack ─────────────────────────────────────────────────────────────
-//
-// Props
-//   toasts: Array of descriptor objects — one of:
-//     { id, type: "new_category", suggested, onConfirm, onDismiss }
-//     { id, type: "undo_delete",  content,   onUndo,    onExpire  }
-//     { id, type: "undo_add",     content,   onUndo,    onExpire  }
+// ── ToastStack ────────────────────────────────────────────────────
 
 export default function ToastStack({ toasts }) {
   return (
@@ -199,19 +143,16 @@ export default function ToastStack({ toasts }) {
         {toasts.map((t) => {
           if (t.type === "new_category") {
             return (
-              <NewCategoryToast
-                key={t.id}
+              <NewCategoryToast key={t.id}
                 suggested={t.suggested}
                 onConfirm={t.onConfirm}
                 onDismiss={t.onDismiss}
               />
             );
           }
-          // undo_add and undo_delete both render UndoToast
           const variant = t.type === "undo_add" ? "add" : "delete";
           return (
-            <UndoToast
-              key={t.id}
+            <UndoToast key={t.id}
               variant={variant}
               content={t.content}
               onUndo={t.onUndo}

@@ -1,33 +1,16 @@
 /**
- * ResultsList.jsx
+ * ResultsList.jsx — Chani
  *
- * Displays a list of memory entries returned by the backend.
- * Each entry shows: category badge, content text, formatted timestamp.
- * Friendly empty state is shown when the results array is empty.
+ * Displays memory entries with warm glassmorphism card styling.
  *
  * Props
- * -----
- *   results   {Array}   List of StorageEntry objects from the backend
- *   message   {string}  Optional contextual message from the API response
- *   intent    {string}  "add" | "retrieve" | "unknown" — affects empty state copy
+ * ─────
+ *   results   {Array}   StorageEntry objects from the backend
+ *   message   {string}  Contextual message from API response
+ *   intent    {string}  "add" | "retrieve" | "remove" | "unknown"
  */
 
 import { motion, AnimatePresence } from "framer-motion";
-
-const CATEGORY_COLORS = {
-  anime:    { bg: "rgba(139,92,246,0.18)", border: "rgba(139,92,246,0.45)", text: "#a78bfa" },
-  manga:    { bg: "rgba(236,72,153,0.15)", border: "rgba(236,72,153,0.40)", text: "#f472b6" },
-  movie:    { bg: "rgba(59,130,246,0.15)", border: "rgba(59,130,246,0.40)", text: "#60a5fa" },
-  book:     { bg: "rgba(16,185,129,0.15)", border: "rgba(16,185,129,0.40)", text: "#34d399" },
-  food:     { bg: "rgba(245,158,11,0.15)", border: "rgba(245,158,11,0.40)", text: "#fbbf24" },
-  reminder: { bg: "rgba(239,68,68,0.15)",  border: "rgba(239,68,68,0.40)",  text: "#f87171" },
-  bus:      { bg: "rgba(20,184,166,0.15)", border: "rgba(20,184,166,0.40)", text: "#2dd4bf" },
-  default:  { bg: "rgba(99,102,241,0.15)", border: "rgba(99,102,241,0.40)", text: "#818cf8" },
-};
-
-function categoryStyle(category = "") {
-  return CATEGORY_COLORS[category.toLowerCase()] ?? CATEGORY_COLORS.default;
-}
 
 function formatDate(ts) {
   if (!ts) return "";
@@ -46,26 +29,28 @@ const containerVariants = {
 };
 
 const itemVariants = {
-  hidden:  { opacity: 0, y: 14, scale: 0.97 },
+  hidden:  { opacity: 0, y: 12, scale: 0.97 },
   visible: { opacity: 1, y: 0,  scale: 1,
-             transition: { type: "spring", stiffness: 260, damping: 22 } },
-  exit:    { opacity: 0, y: -8, scale: 0.96, transition: { duration: 0.2 } },
+             transition: { type: "spring", stiffness: 240, damping: 24 } },
+  exit:    { opacity: 0, y: -6, scale: 0.96, transition: { duration: 0.18 } },
 };
 
 function EmptyState({ intent }) {
   const copy =
     intent === "add"
-      ? { icon: "✦", head: "Entry saved.", sub: "Say 'list anime' to see your memories." }
+      ? { icon: "✦", head: "Saved.", sub: 'Say "list anime" to see your memories.' }
       : intent === "retrieve"
-      ? { icon: "◌", head: "Nothing here yet.", sub: "Add one with 'new anime Blue Lock'." }
-      : { icon: "◎", head: "Waiting for input.", sub: "Speak or type a command below." };
+      ? { icon: "◌", head: "Nothing here yet.", sub: 'Add one with "new book Dune".' }
+      : intent === "remove"
+      ? { icon: "◎", head: "Removed.", sub: "Entry has been deleted." }
+      : { icon: "◎", head: "Waiting.", sub: "Speak or type a command below." };
 
   return (
     <motion.div
       className="empty-state"
-      initial={{ opacity: 0, y: 10 }}
+      initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.45 }}
+      transition={{ duration: 0.4 }}
     >
       <span className="empty-icon">{copy.icon}</span>
       <p className="empty-head">{copy.head}</p>
@@ -76,26 +61,26 @@ function EmptyState({ intent }) {
 
 export default function ResultsList({ results = [], message = "", intent = "" }) {
   const hasResults = results.length > 0;
+  // Don't render anything below the fold until the user has interacted once
+  const hasInteracted = intent !== "";
 
   return (
     <div className="results-wrap">
-      {/* API message banner */}
       <AnimatePresence>
         {message && (
           <motion.p
             key={message}
             className="results-message"
-            initial={{ opacity: 0, y: -6 }}
+            initial={{ opacity: 0, y: -4 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.3 }}
+            transition={{ duration: 0.28 }}
           >
             {message}
           </motion.p>
         )}
       </AnimatePresence>
 
-      {/* Entry cards or empty state */}
       <AnimatePresence mode="wait">
         {hasResults ? (
           <motion.ul
@@ -105,46 +90,29 @@ export default function ResultsList({ results = [], message = "", intent = "" })
             initial="hidden"
             animate="visible"
           >
-            {results.map((entry) => {
-              const style = categoryStyle(entry.category);
-              return (
-                <motion.li
-                  key={entry.id}
-                  className="result-card"
-                  variants={itemVariants}
-                  layout
-                >
-                  {/* Category badge */}
-                  <span
-                    className="category-badge"
-                    style={{
-                      background: style.bg,
-                      border: `1px solid ${style.border}`,
-                      color: style.text,
-                    }}
-                  >
-                    {entry.category}
-                  </span>
-
-                  {/* Content */}
-                  <p className="entry-content">{entry.content}</p>
-
-                  {/* Tags + timestamp row */}
-                  <div className="entry-meta">
-                    {entry.tags?.length > 0 && (
-                      <span className="entry-tags">
-                        {entry.tags.join(" · ")}
-                      </span>
-                    )}
-                    <span className="entry-time">{formatDate(entry.created_at)}</span>
-                  </div>
-                </motion.li>
-              );
-            })}
+            {results.map((entry) => (
+              <motion.li
+                key={entry.id ?? entry.content}
+                className="result-card"
+                variants={itemVariants}
+                layout
+              >
+                <span className="category-badge">{entry.category}</span>
+                <p className="entry-content">{entry.content}</p>
+                <div className="entry-meta">
+                  {entry.tags?.length > 0 && (
+                    <span className="entry-tags">
+                      {entry.tags.join(" · ")}
+                    </span>
+                  )}
+                  <span className="entry-time">{formatDate(entry.created_at)}</span>
+                </div>
+              </motion.li>
+            ))}
           </motion.ul>
-        ) : (
+        ) : hasInteracted ? (
           <EmptyState key="empty" intent={intent} />
-        )}
+        ) : null}
       </AnimatePresence>
     </div>
   );

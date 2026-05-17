@@ -1,15 +1,6 @@
-/* index.css — bare-minimum reset only.
-   All design tokens, layout, and component styles live in app.css.       */
-
-*, *::before, *::after {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-}
-
-html, body, #root {
-  height: 100%;
-}
+/* index.css — entry point only.
+   All resets, tokens, and styles live in app.css.
+   This file just ensures font smoothing is applied at the root. */
 
 body {
   -webkit-font-smoothing: antialiased;
